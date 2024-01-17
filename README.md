@@ -1,79 +1,38 @@
-# 02 Build Schema
+# 03 Create Apollo Server
 
-## Install dependencies
+## Update index.ts
 
-To get started with our schema, we'll need a couple packages first: `@apollo/server`, `graphql` and `graphql-tag`.
+```ts
+import { ApolloServer } from '@apollo/server';
+import { startStandaloneServer } from '@apollo/server/standalone';
+import { typeDefs } from './schema';
 
-- The `@apollo/server` package provides a full-fledged, spec-compliant GraphQL server.
+async function startApolloServer() {
+  const server = new ApolloServer({ typeDefs });
 
-- The `graphql` package provides the core logic for parsing and validating GraphQL queries.
+  const { url } = await startStandaloneServer(server);
 
-- The `graphql-tag` package provides the `gql` template literal that we'll use in a moment.
+  console.log(`🚀 Server running at ${url}`);
+}
+
+startApolloServer();
+```
+
+## Run
 
 ```bash
-npm install @apollo/server graphql graphql-tag
+npm run dev
 ```
 
-## Create schema file
+Output:
 
-`src/schema.ts`
-
-```ts
-import gql from 'graphql-tag';
-
-export const typeDefs = gql`
-  type Query {
-    example: String
-    users: [User!]
-    albums: [Album!]
-  }
-
-  type User {
-    id: Int!
-    name: String!
-    username: String
-    email: String
-  }
-
-  type Album {
-    id: Int!
-    title: String!
-  }
-`;
+```bash
+[nodemon] 3.0.3
+[nodemon] to restart at any time, enter `rs`
+[nodemon] watching path(s): src/**/*
+[nodemon] watching extensions: ts,json
+[nodemon] starting `ts-node ./src/index.ts`
+🚀 Server running at http://localhost:4000/
 ```
 
-## Create mock data
-
-`src/datasources/mocks.ts`
-
-```ts
-const users = [
-  {
-    id: 1,
-    name: 'Leanne Graham',
-    username: 'Bret',
-    email: 'Sincere@april.biz',
-  },
-  {
-    id: 2,
-    name: 'Ervin Howell',
-    username: 'Antonette',
-    email: 'Shanna@melissa.tv',
-  },
-];
-
-const albums = [
-  {
-    userId: 1,
-    id: 1,
-    title: 'quidem molestiae enim',
-  },
-  {
-    userId: 1,
-    id: 2,
-    title: 'sunt qui excepturi placeat culpa',
-  },
-];
-
-export default { users, albums };
-```
+Upon checking in browser, you should now be able to see the `schema` and `explorer` where we can perform our operations.
