@@ -1,21 +1,43 @@
-# 03 Create Apollo Server
+# 04 Resolvers
 
-## Update index.ts
+We will now write `resolver` functions to fetch data and return it
+
+## Create resolvers.ts
+
+`src/resolvers.ts`
 
 ```ts
-import { ApolloServer } from '@apollo/server';
-import { startStandaloneServer } from '@apollo/server/standalone';
-import { typeDefs } from './schema';
+import mocks from './datasources/mocks';
 
-async function startApolloServer() {
-  const server = new ApolloServer({ typeDefs });
+export const resolvers = {
+  Query: {
+    example: () => 'Hello World',
+    users: () => mocks.users,
+    albums: () => mocks.albums,
+  },
+};
+```
 
-  const { url } = await startStandaloneServer(server);
+## Register resolvers in Apollo Server
 
-  console.log(`🚀 Server running at ${url}`);
-}
+```diff
+ import { ApolloServer } from '@apollo/server';
+ import { startStandaloneServer } from '@apollo/server/standalone';
++import { resolvers } from './resolvers';
+ import { typeDefs } from './schema';
 
-startApolloServer();
+ async function startApolloServer() {
+   const server = new ApolloServer({
+     typeDefs,
++    resolvers,
+   });
+
+   const { url } = await startStandaloneServer(server);
+
+   console.log(`🚀 Server running at ${url}`);
+ }
+
+ startApolloServer();
 ```
 
 ## Run
@@ -24,15 +46,34 @@ startApolloServer();
 npm run dev
 ```
 
-Output:
+## Test Query
 
-```bash
-[nodemon] 3.0.3
-[nodemon] to restart at any time, enter `rs`
-[nodemon] watching path(s): src/**/*
-[nodemon] watching extensions: ts,json
-[nodemon] starting `ts-node ./src/index.ts`
-🚀 Server running at http://localhost:4000/
+```graphql
+query ExampleQuery {
+  example
+  users {
+    id
+    name
+  }
+}
 ```
 
-Upon checking in browser, you should now be able to see the `schema` and `explorer` where we can perform our operations.
+Output:
+
+```json
+{
+  "data": {
+    "example": "Hello World",
+    "users": [
+      {
+        "id": 1,
+        "name": "Leanne Graham"
+      },
+      {
+        "id": 2,
+        "name": "Ervin Howell"
+      }
+    ]
+  }
+}
+```
