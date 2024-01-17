@@ -21,4 +21,9 @@ export const resolvers = {
       return mocks.fruits;
     },
   },
+  Album: {
+    user: async (parent, _, { dataSources }) => {
+      return dataSources.userApi.getUser(parent.userId);
+    },
+  },
 };

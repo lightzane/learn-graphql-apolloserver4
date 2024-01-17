@@ -27,5 +27,6 @@ export const typeDefs = gql`
   type Album {
     id: Int!
     title: String!
+    user: User
   }
 `;

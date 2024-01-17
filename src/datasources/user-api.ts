@@ -6,4 +6,8 @@ export class UserAPI extends RESTDataSource {
   getUsers() {
     return this.get('users');
   }
+
+  getUser(id: number) {
+    return this.get(`users/${id}`);
+  }
 }

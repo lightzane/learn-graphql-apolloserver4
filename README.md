@@ -1,95 +1,38 @@
-# 06 Context and Datasources
+# 07 Related Data and Resolver Chain
 
-We can pass a `context` object in the options of `startStandaloneServer`.
+We will now connect `Album` and `Author`.
 
-The context has many usages such as getting **user tokens**, **dataSources**, **request headers**, etc.
+## Update Album Schema
 
-## Add context in apollo server
-
-`src/index.ts`
+Let us update our `src/schema.ts`
 
 ```diff
--const { url } = await startStandaloneServer(server)
-+const { url } = await startStandaloneServer(server, {
-   context: async () => {
-     return {};
-   },
- });
-```
-
-## Create Class as a basic dataSource
-
-`datasources/user-api.ts`
-
-```ts
-import mocks from './mocks';
-
-export class UserAPI {
-  getUsers() {
-    return mocks.users;
-  }
+type Album {
+  id: Int!
+  title: String!
++ user: User
 }
 ```
 
-## Pass the datasource in context
+## Actual Album data
 
-`src/index.ts`
+Notice that the structure that we have in our data (Source: https://jsonplaceholder.typicode.com/albums)
 
-```diff
-+import { UserAPI } from './datasources/user-api';
-
- const { url } = await startStandaloneServer(server, {
-   context: async () => {
-     return {
-+       dataSources: {
-+         userApi: new UserAPI(),
-+       },
-     };
-   },
- });
-```
-
-## Use context in Resolvers
-
-As a review, the `resolver` function have 4 arguments: `parent`, `args`, `context`, `info`. We can access the `dataSources` in the context argument.
-
-`src/resolvers.ts`
-
-```diff
-export const resolvers = {
-  Query: {
-    ...
--   users: () => mocks.users,
-+   users: (_, __, { dataSources }) => {
-+     return dataSources.userApi.getUsers()
-+   }
-    ...
-  },
-};
-```
-
-## Try it
-
-```graphql
-query GetUsers {
-  users {
-    name
-    username
-  }
+```json
+{
+  "userId": 1,
+  "id": 1,
+  "title": "quidem molestiae enim"
 }
 ```
 
-# RESTDataSource
+We do not want users to query the `userId` but instead we want it to be `User`.
 
-We can also retrieve data from different datasources such as database or another `REST API` using `@apollo/datasource-rest`. Other packages will be used when retrieving directly from databases.
-
-```bash
-npm install @apollo/datasource-rest
-```
+Behind the scenes, we will use `userId` to get the `User` that the client will never see it under the hood.
 
 Update `datasources/user-api.ts`
 
-```ts
+```diff
 import { RESTDataSource } from '@apollo/datasource-rest';
 
 export class UserAPI extends RESTDataSource {
@@ -98,82 +41,71 @@ export class UserAPI extends RESTDataSource {
   getUsers() {
     return this.get('users');
   }
+
++ getUser(id: number) {
++   return this.get(`users/${id}`);
++ }
 }
 ```
 
-The advantage of using `RESTDataSource` is that it has caching mechanism.
+## Resolve Chain
 
-`src/index.ts`
+Since the query will be `Albums.user`, you can observe that the `parent` is `Album` of the `user` field.
 
-```diff
-const { url } = await startStandaloneServer(server, {
-  context: async () => {
-+   const { cache } = server;
+Remember the structure of the `parent` (which is Album):
 
-    return {
-      dataSources: {
-+       userApi: new UserAPI({ cache }),
-      },
-    };
-  },
-});
-```
-
-## Try it
-
-You would now be getting more user data coming from this REST API
-
-```graphql
-query GetUsers {
-  users {
-    name
-    username
-  }
+```json
+{
+  "userId": 1,
+  "id": 1,
+  "title": "quidem molestiae enim"
 }
 ```
 
-## Apply REST for the Album
-
-`datasources/album-api.ts`
-
-```ts
-import { RESTDataSource } from '@apollo/datasource-rest';
-
-export class AlbumAPI extends RESTDataSource {
-  baseURL = 'https://jsonplaceholder.typicode.com';
-
-  getAlbums() {
-    return this.get('albums');
-  }
-}
-```
-
-`src/index.ts`
-
-```diff
-const { url } = await startStandaloneServer(server, {
-  context: async () => {
-    const { cache } = server;
-
-    return {
-      dataSources: {
-        userApi: new UserAPI({ cache }),
-+       albumApi: new AlbumAPI({ cache }),
-      },
-    };
-  },
-});
-```
+We need to create a resolver for `Albums.user`
 
 `src/resolvers.ts`
 
 ```diff
 export const resolvers = {
-  Query: {
-    ...
-+   albums: (_, __, { dataSources }) => {
-+     return dataSources.albumApi.getAlbums();
+  Query: {...},
+  Mutation: {...},
++ Album: {
++   user: async (parent, _, { dataSources }) => {
++     return dataSources.userApi.getUser(parent.userId);
 +   },
-  },
++ },
 };
+```
+
+## Try It!
+
+```graphql
+query AlbumsAndUser {
+  albums {
+    id
+    title
+    user {
+      name
+    }
+  }
+}
+```
+
+OUTPUT
+
+```json
+{
+  "data": {
+    "albums": [
+      {
+        "id": 1,
+        "title": "quidem molestiae enim",
+        "user": {
+          "name": "Leanne Graham"
+        }
+      }
+    ]
+  }
+}
 ```
