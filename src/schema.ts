@@ -1,32 +1,6 @@
+import { readFileSync } from 'fs';
 import gql from 'graphql-tag';
 
-export const typeDefs = gql`
-  type Query {
-    example: String
-    fruits: [Fruit!]
-    users: [User!]
-    albums: [Album!]
-  }
-
-  type Mutation {
-    addFruit(name: String!): [Fruit]
-  }
-
-  type Fruit {
-    id: ID!
-    name: String!
-  }
-
-  type User {
-    id: Int!
-    name: String!
-    username: String
-    email: String
-  }
-
-  type Album {
-    id: Int!
-    title: String!
-    user: User
-  }
-`;
+export const typeDefs = gql(
+  readFileSync('./src/schema.graphql', { encoding: 'utf-8' })
+);
