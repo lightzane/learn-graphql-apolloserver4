@@ -1,81 +1,79 @@
-# 01 Initiate Project
+# 02 Build Schema
 
-Learning GraphQL using Apollo Server 4 built from scratch or blank project.
+## Install dependencies
 
-> Note: This project was created using **node v18** with **npm v9**
+To get started with our schema, we'll need a couple packages first: `@apollo/server`, `graphql` and `graphql-tag`.
 
-## Content
+- The `@apollo/server` package provides a full-fledged, spec-compliant GraphQL server.
 
-1. [Initialize Node Project](#initialize-node-project)
-2. [Create initial file](#create-initial-file)
-3. [Install initial dev dependencies](#install-initial-dev-dependencies)
-4. [Generate tsconfig.json](#generate-tsconfigjson)
-5. [Update package.json](#update-packagejson)
-6. [Test the project](#test-the-project)
+- The `graphql` package provides the core logic for parsing and validating GraphQL queries.
 
-## Initialize Node Project
+- The `graphql-tag` package provides the `gql` template literal that we'll use in a moment.
 
 ```bash
-npm init -y
+npm install @apollo/server graphql graphql-tag
 ```
 
-## Create initial file
+## Create schema file
 
-Create `src/index.ts`.
-
-## Install initial dev dependencies
-
-```bash
-npm install -D typescript nodemon ts-node
-```
-
-|              |                                                                          |
-| ------------ | ------------------------------------------------------------------------ |
-| `typescript` | Javascript with syntax for types                                         |
-| `nodemon`    | For development purpose to reload the server automatically every changes |
-| `ts-node`    | Required by `nodemon` to run `typescript`                                |
-
-## Generate tsconfig.json
-
-```bash
-npx tsc --init
-```
-
-## Update package.json
-
-```diff
-{
-  "scripts": {
-+   "dev": "nodemon ./src/index.ts --watch src",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  }
-}
-```
-
-## Test the project
-
-### Add temporary code to test
-
-`src/index.ts`
+`src/schema.ts`
 
 ```ts
-console.log('Hello World');
+import gql from 'graphql-tag';
+
+export const typeDefs = gql`
+  type Query {
+    example: String
+    users: [User!]
+    albums: [Album!]
+  }
+
+  type User {
+    id: Int!
+    name: String!
+    username: String
+    email: String
+  }
+
+  type Album {
+    id: Int!
+    title: String!
+  }
+`;
 ```
 
-### Run
+## Create mock data
 
-```bash
-npm run dev
-```
+`src/datasources/mocks.ts`
 
-Output:
+```ts
+const users = [
+  {
+    id: 1,
+    name: 'Leanne Graham',
+    username: 'Bret',
+    email: 'Sincere@april.biz',
+  },
+  {
+    id: 2,
+    name: 'Ervin Howell',
+    username: 'Antonette',
+    email: 'Shanna@melissa.tv',
+  },
+];
 
-```bash
-[nodemon] 3.0.3
-[nodemon] to restart at any time, enter `rs`
-[nodemon] watching path(s): src/**/*
-[nodemon] watching extensions: ts,json
-[nodemon] starting `ts-node ./src/index.ts`
-Hello World
-[nodemon] clean exit - waiting for changes before restart
+const albums = [
+  {
+    userId: 1,
+    id: 1,
+    title: 'quidem molestiae enim',
+  },
+  {
+    userId: 1,
+    id: 2,
+    title: 'sunt qui excepturi placeat culpa',
+  },
+];
+
+export default { users, albums };
 ```
