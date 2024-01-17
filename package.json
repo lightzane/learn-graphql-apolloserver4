@@ -19,6 +19,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
+    "@apollo/datasource-rest": "^6.2.2",
     "@apollo/server": "^4.10.0",
     "graphql": "^16.8.1",
     "graphql-tag": "^2.12.6"

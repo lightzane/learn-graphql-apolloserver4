@@ -4,8 +4,12 @@ export const resolvers = {
   Query: {
     example: () => 'Hello World',
     fruits: () => mocks.fruits,
-    users: () => mocks.users,
-    albums: () => mocks.albums,
+    users: (_, __, { dataSources }) => {
+      return dataSources.userApi.getUsers();
+    },
+    albums: (_, __, { dataSources }) => {
+      return dataSources.albumApi.getAlbums();
+    },
   },
   Mutation: {
     addFruit: (_, { name }) => {

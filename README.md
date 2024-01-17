@@ -1,130 +1,179 @@
-# 05 Mutations
+# 06 Context and Datasources
 
-Let's create a new set of mock data.
+We can pass a `context` object in the options of `startStandaloneServer`.
 
-`datasources/mocks.ts`
+The context has many usages such as getting **user tokens**, **dataSources**, **request headers**, etc.
 
-```ts
-const fruits = [
-  {
-    id: '1',
-    name: 'apple',
-  },
-];
+## Add context in apollo server
 
-export default { users, albums, fruits };
-```
-
-## Update schema
-
-`src/schema.ts`
+`src/index.ts`
 
 ```diff
- type Query {
-   example: String
-+  fruits: [Fruit!]
-   users: [User!]
-   albums: [Album!]
- }
-
-+ type Mutation {
-+   addFruit(name: String!): [Fruit]
-+ }
-
-+type Fruit {
-+  id: ID!
-+  name: String!
-+}
+-const { url } = await startStandaloneServer(server)
++const { url } = await startStandaloneServer(server, {
+   context: async () => {
+     return {};
+   },
+ });
 ```
 
-## Update Resolvers
+## Create Class as a basic dataSource
+
+`datasources/user-api.ts`
+
+```ts
+import mocks from './mocks';
+
+export class UserAPI {
+  getUsers() {
+    return mocks.users;
+  }
+}
+```
+
+## Pass the datasource in context
+
+`src/index.ts`
+
+```diff
++import { UserAPI } from './datasources/user-api';
+
+ const { url } = await startStandaloneServer(server, {
+   context: async () => {
+     return {
++       dataSources: {
++         userApi: new UserAPI(),
++       },
+     };
+   },
+ });
+```
+
+## Use context in Resolvers
+
+As a review, the `resolver` function have 4 arguments: `parent`, `args`, `context`, `info`. We can access the `dataSources` in the context argument.
 
 `src/resolvers.ts`
 
-**Heads up**: You may encounter typescript errors. Ignore it for now and close the file.
-
 ```diff
- export const resolvers = {
-   Query: {
-     example: () => 'Hello World',
-+    fruits: () => mocks.fruits,
-     users: () => mocks.users,
-     albums: () => mocks.albums,
-   },
-+  Mutation: {
-+    addFruit: (_, { name }) => {
-+      mocks.fruits.push({
-+        id: Date.now().toString(),
-+        name,
-+      });
-+
-+      return mocks.fruits;
-+    },
-+  },
- };
+export const resolvers = {
+  Query: {
+    ...
+-   users: () => mocks.users,
++   users: (_, __, { dataSources }) => {
++     return dataSources.userApi.getUsers()
++   }
+    ...
+  },
+};
 ```
 
-#### A `resolver` function have 4 arguments:
-
-- `parent` an object that is the parent of a field in a resolver chain (_later on this_)
-
-- `args` an object in which its keys are arguments passed in a `query` or `mutation`
-
-- `context` an object shared across all resolvers that are executing for a particular operation. The resolver needs this argument to share state, like authentication information, a database connection (_later on this_)
-
-- `info` contains information about the operation's execution state, including the field name, the path to the field from the root, and more. It's not used as frequently as the others, but it can be useful for more advanced actions like setting cache policies at the resolver level.
-
-## Silencing the Typescript Error
-
-The error we are encountering is one of the Typescript's feature of `noImplicitAny` which is `true` by default. (_We will fix the typings later by using `@graphql-codegen`_)
-
-For now, let us have a quick solution by addding this in the `tsconfig.json`
-
-```diff
-{
-  ...
-+  "noImplicitAny": false,
-}
-```
-
-```bash
-npm run dev
-```
-
-## Test
+## Try it
 
 ```graphql
-mutation AddingFruits($name: String!) {
-  addFruit(name: $name) {
-    id
+query GetUsers {
+  users {
     name
+    username
   }
 }
 ```
 
-**Variables**
+# RESTDataSource
 
-```json
-{
-  "name": "Lemon"
+We can also retrieve data from different datasources such as database or another `REST API` using `@apollo/datasource-rest`. Other packages will be used when retrieving directly from databases.
+
+```bash
+npm install @apollo/datasource-rest
+```
+
+Update `datasources/user-api.ts`
+
+```ts
+import { RESTDataSource } from '@apollo/datasource-rest';
+
+export class UserAPI extends RESTDataSource {
+  baseURL = 'https://jsonplaceholder.typicode.com';
+
+  getUsers() {
+    return this.get('users');
+  }
 }
 ```
 
-OUTPUT
+The advantage of using `RESTDataSource` is that it has caching mechanism.
 
-```json
-{
-  "data": {
-    "fruits": [
-      {
-        "id": "1",
-        "name": "apple"
+`src/index.ts`
+
+```diff
+const { url } = await startStandaloneServer(server, {
+  context: async () => {
++   const { cache } = server;
+
+    return {
+      dataSources: {
++       userApi: new UserAPI({ cache }),
       },
-      {
-        "id": "1705462823447",
-        "name": "Lemon"
-      }
-    ]
+    };
+  },
+});
+```
+
+## Try it
+
+You would now be getting more user data coming from this REST API
+
+```graphql
+query GetUsers {
+  users {
+    name
+    username
   }
 }
+```
+
+## Apply REST for the Album
+
+`datasources/album-api.ts`
+
+```ts
+import { RESTDataSource } from '@apollo/datasource-rest';
+
+export class AlbumAPI extends RESTDataSource {
+  baseURL = 'https://jsonplaceholder.typicode.com';
+
+  getAlbums() {
+    return this.get('albums');
+  }
+}
+```
+
+`src/index.ts`
+
+```diff
+const { url } = await startStandaloneServer(server, {
+  context: async () => {
+    const { cache } = server;
+
+    return {
+      dataSources: {
+        userApi: new UserAPI({ cache }),
++       albumApi: new AlbumAPI({ cache }),
+      },
+    };
+  },
+});
+```
+
+`src/resolvers.ts`
+
+```diff
+export const resolvers = {
+  Query: {
+    ...
++   albums: (_, __, { dataSources }) => {
++     return dataSources.albumApi.getAlbums();
++   },
+  },
+};
 ```
