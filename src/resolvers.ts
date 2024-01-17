@@ -1,6 +1,7 @@
 import mocks from './datasources/mocks';
+import { Resolvers } from './types';
 
-export const resolvers = {
+export const resolvers: Resolvers = {
   Query: {
     example: () => 'Hello World',
     fruits: () => mocks.fruits,
