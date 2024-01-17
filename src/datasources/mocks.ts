@@ -26,4 +26,11 @@ const albums = [
   },
 ];
 
-export default { users, albums };
+const fruits = [
+  {
+    id: '1',
+    name: 'apple',
+  },
+];
+
+export default { users, albums, fruits };
