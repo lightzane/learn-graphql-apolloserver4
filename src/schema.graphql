@@ -1,3 +1,30 @@
+"Resolver for this scalar is found in ./src/scalars/date-time.scalar.ts"
+scalar DateTime
+
 type Query {
-  example: String
+  "Returns data while applying custom scalars"
+  events: [Event!]
+  "Returns raw data"
+  raw: [RawEvent!]
+}
+
+type Mutation {
+  addEvent(name: String!, date: DateTime!): AddEventResponse!
+}
+
+type Event {
+  id: ID!
+  name: String!
+  date: DateTime
+}
+
+type RawEvent {
+  id: ID!
+  name: String!
+  date: String!
+}
+
+type AddEventResponse {
+  event: Event
+  raw: RawEvent
 }
